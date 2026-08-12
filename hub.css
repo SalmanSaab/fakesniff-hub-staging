@@ -3,7 +3,7 @@
    untouched, but they now resolve to hub-tokens.css. One palette across the
    shell, the Idea Lab and the Lookbook — previously each carried its own, which
    is why the hub read as three different apps.
-   Ground moved from var(--fs-bg) to a warm near-black: pure-black-plus-bright-text
+   Ground moved from a cold near-black to a warm one: pure-black-plus-bright-text
    is what made it tiring over a long session. */
 :root {
   --bg: var(--fs-bg);
