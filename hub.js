@@ -29,7 +29,7 @@ const FLAG_LABELS = {
   missing_assets: "Missing assets"
 };
 const ROLE_RANK = { viewer: 0, member: 1, admin: 2, owner: 3 };
-const REGISTERABLE_SECTION_IDS = new Set(["idea-lab"]);
+const REGISTERABLE_SECTION_IDS = new Set(["idea-lab", "lookbook"]);
 const registeredSections = new Map();
 
 const state = {
@@ -225,6 +225,11 @@ async function mountRegisteredSection(sectionId) {
 function activateSection(sectionId) {
   const normalized = get(sectionId)?.classList.contains("page-section") ? sectionId : "home";
   state.activeSectionId = normalized;
+  // Claude — 2026-08-12: show only the active section. Without this every
+  // section renders at once and the nav appears not to work.
+  document.querySelectorAll(".page-section").forEach((section) => {
+    section.classList.toggle("is-active", section.id === normalized);
+  });
   navLinks.forEach((link) => {
     const current = link.getAttribute("href") === `#${normalized}`;
     link.classList.toggle("is-current", current);

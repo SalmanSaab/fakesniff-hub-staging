@@ -132,3 +132,8 @@
 .ilab-sheet:focus-visible{outline:2px solid var(--il-green);outline-offset:2px}
 .ilab :focus-visible{outline:2px solid var(--il-green);outline-offset:2px}
 .ilab-new button[disabled]{opacity:.6;cursor:progress}
+
+/* Claude — 2026-08-12: an open sheet must sit above the hub's sticky rail and
+   topbar, and the page behind it must not scroll. Both were wrong on iOS. */
+body.hub-sheet-open{overflow:hidden;touch-action:none}
+#ilab-detail{z-index:2000}

@@ -337,12 +337,19 @@ select {
   color: var(--bg);
 }
 
+/* Claude — 2026-08-12: sections are pages, not scroll anchors. Previously every
+   section rendered at once and the nav only scrolled, so tapping "Idea Lab" left
+   Designs and Decisions stacked underneath. On a phone that reads as broken. */
 .page-section {
+  display: none;
   max-width: 1560px;
-  min-height: 70vh;
   margin: 0 auto;
   padding: 76px clamp(22px, 4vw, 58px) 96px;
-  border-bottom: 1px solid var(--line);
+}
+
+.page-section.is-active {
+  display: block;
+  min-height: 70vh;
 }
 
 .hero-section {
