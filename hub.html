@@ -13,23 +13,23 @@
   <title>FAKESNIFF — company hub</title>
   <!-- Claude — 2026-08-12: shared design tokens. Must load before every other
        stylesheet so the shell and the modules resolve the same palette. -->
-  <link rel="stylesheet" href="hub-tokens.css?v=1786659156">
-  <link rel="stylesheet" href="hub.css?v=1786659156">
-  <script src="hub-config.js?v=1786659156" defer></script>
-  <script type="module" src="hub.js?v=1786659156"></script>
+  <link rel="stylesheet" href="hub-tokens.css?v=1788088000">
+  <link rel="stylesheet" href="hub.css?v=1788088000">
+  <script src="hub-config.js?v=1788088000" defer></script>
+  <script type="module" src="hub.js?v=1788088000"></script>
   <!-- Claude — 2026-08-12: Idea Lab module. Loads after hub.js so window.Hub
        exists to register against. Its stylesheet is same-origin, so the CSP
        (style-src 'self') stays intact. -->
-  <script type="module" src="hub-idea-lab.js?v=1786659156"></script>
+  <script type="module" src="hub-idea-lab.js?v=1788088000"></script>
   <!-- Claude — 2026-08-12: Lookbook (Emiel's visual reference container). -->
-  <script type="module" src="hub-lookbook.js?v=1786659156"></script>
-  <script type="module" src="hub-decisions.js?v=1786659156"></script>
+  <script type="module" src="hub-lookbook.js?v=1788088000"></script>
+  <script type="module" src="hub-decisions.js?v=1788088000"></script>
   <!-- Claude — 2026-08-13: Designs. Not a second Lookbook: this is where a
        graphic gets tried on a garment before anyone cuts fabric. -->
-  <script type="module" src="hub-designs.js?v=1786659156"></script>
+  <script type="module" src="hub-designs.js?v=1788088000"></script>
   <!-- Claude — 2026-08-13: the assistant. Talks only to the Edge Function;
        the Gemini key never reaches this page. -->
-  <script type="module" src="hub-assistant.js?v=1786659156"></script>
+  <script type="module" src="hub-assistant.js?v=1788088000"></script>
 </head>
 <body>
   <!-- Codex — 2026-08-11: publishable Hub shell. Company records render only after authenticated membership is verified. -->
