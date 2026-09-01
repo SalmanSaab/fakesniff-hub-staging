@@ -13,23 +13,23 @@
   <title>FAKESNIFF — company hub</title>
   <!-- Claude — 2026-08-12: shared design tokens. Must load before every other
        stylesheet so the shell and the modules resolve the same palette. -->
-  <link rel="stylesheet" href="hub-tokens.css?v=1788262378">
-  <link rel="stylesheet" href="hub.css?v=1788262378">
-  <script src="hub-config.js?v=1788262378" defer></script>
-  <script type="module" src="hub.js?v=1788262378"></script>
+  <link rel="stylesheet" href="hub-tokens.css?v=1788269925">
+  <link rel="stylesheet" href="hub.css?v=1788269925">
+  <script src="hub-config.js?v=1788269925" defer></script>
+  <script type="module" src="hub.js?v=1788269925"></script>
   <!-- Claude — 2026-08-12: Idea Lab module. Loads after hub.js so window.Hub
        exists to register against. Its stylesheet is same-origin, so the CSP
        (style-src 'self') stays intact. -->
-  <script type="module" src="hub-idea-lab.js?v=1788262378"></script>
+  <script type="module" src="hub-idea-lab.js?v=1788269925"></script>
   <!-- Claude — 2026-08-12: Lookbook (Emiel's visual reference container). -->
-  <script type="module" src="hub-lookbook.js?v=1788262378"></script>
-  <script type="module" src="hub-decisions.js?v=1788262378"></script>
+  <script type="module" src="hub-lookbook.js?v=1788269925"></script>
+  <script type="module" src="hub-decisions.js?v=1788269925"></script>
   <!-- Claude — 2026-08-13: Designs. Not a second Lookbook: this is where a
        graphic gets tried on a garment before anyone cuts fabric. -->
-  <script type="module" src="hub-designs.js?v=1788262378"></script>
+  <script type="module" src="hub-designs.js?v=1788269925"></script>
   <!-- Claude — 2026-08-13: the assistant. Talks only to the Edge Function;
        the Gemini key never reaches this page. -->
-  <script type="module" src="hub-assistant.js?v=1788262378"></script>
+  <script type="module" src="hub-assistant.js?v=1788269925"></script>
 </head>
 <body>
   <!-- Codex — 2026-08-11: publishable Hub shell. Company records render only after authenticated membership is verified. -->
@@ -100,7 +100,7 @@
         <a class="nav-link" href="#work" data-mobile-nav="primary">
           <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="m8 12 3 3 5-6"></path></svg></span>
           <span class="nav-label" data-t="nav.work">Work</span>
-          <span id="work-nav-count" class="nav-count" aria-label="0 active items">0</span>
+          <span id="work-nav-count" class="nav-count" aria-label="0 work items on the board">0</span>
         </a>
         <a class="nav-link" href="#decisions" data-mobile-nav="primary">
           <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6h14v10H9l-4 3V6Z"></path><path d="m9 11 2 2 4-4"></path></svg></span>
