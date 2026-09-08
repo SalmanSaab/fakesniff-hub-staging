@@ -80,6 +80,19 @@ function writeError(raw) {
   return t("updates.err_unconfirmed");
 }
 
+/* Codex, 7 Sep: a denied READ must not be reported with the denied-WRITE
+   sentence. `updates.err_readonly` tells the person they can read updates but
+   not post them, and that is false the moment SELECT is revoked — which is
+   exactly what the recovery procedure does. A message that describes the
+   opposite of what happened is worse than a blunt one. */
+export function readError(raw) {
+  const text = String(raw?.message || raw || "");
+  if (/violates row-level security|permission denied|42501/i.test(text)) {
+    return t("updates.err_read_denied");
+  }
+  return humanUpdateError(raw);
+}
+
 function isDuplicate(raw) {
   return raw?.code === "23505" || /duplicate key/i.test(String(raw?.message || ""));
 }
@@ -222,7 +235,7 @@ export function mountUpdates({ compose, feed, ctx }) {
          a screen that was already correct. */
       if (!alive || mine !== generation) return;
       loadState = "error";
-      loadError = humanUpdateError(err);
+      loadError = readError(err);
       renderFeed();
     }
   }
