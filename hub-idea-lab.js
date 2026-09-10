@@ -183,7 +183,7 @@ export function mount(root, ctx) {
       const thing = String(r.entity_type || text("idea.record")).replace(/s$/, "");
       return {
         who: names.get(r.actor_id) || text("idea.someone"),
-        what: key ? t(key, { thing }) : `${r.action} ${thing}`,
+        what: key ? text(key, { thing }) : `${r.action} ${thing}`,
         at: r.occurred_at,
       };
     });
