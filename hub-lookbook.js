@@ -12,7 +12,7 @@
  *   mount(rootEl, ctx)  where ctx = { restUrl, getAccessToken, anonKey, member, workspaceId }
  */
 
-import { t, onLanguageChange, currentLanguage } from "./hub-i18n.js";
+import { t, applyTranslations, onLanguageChange, currentLanguage } from "./hub-i18n.js";
 
 /* The category label for a stored value. The value in the database never
    changes; only what we show for it does. */
@@ -82,6 +82,13 @@ export function mount(root, ctx) {
   const el = document.createElement("div");
   el.className = "lb" + (canEdit ? "" : " lb-readonly");
   el.innerHTML = TEMPLATE;
+  /* Claude — 2026-09-10: TEMPLATE is a module constant written into the DOM once
+     at mount, so labels inside it do NOT resolve at render time and no redraw
+     reaches them — which is why the add button carried its translation call as
+     literal attribute text, and why render() could never have fixed it. The
+     data-t-* markup is what hub-i18n exists for; setLanguage() re-applies it on
+     every change, so this one call is only for the first paint. */
+  applyTranslations(el);
   root.replaceChildren(el);
   injectStyles();
 
@@ -99,9 +106,17 @@ export function mount(root, ctx) {
   };
   const q = (sel) => el.querySelector(sel);
 
-  /* Claude — 2026-08-30: every label resolves at render time, so a language
-     change only needs a redraw. Without this the page keeps the words it was
-     built with until someone reloads, which reads as the switch not working. */
+  /* Claude — 2026-08-30, corrected 2026-09-10: a language change redraws, which
+     covers every label render() writes — the cards, the filters, the selection
+     titles. Without it the page keeps the words it was built with until someone
+     reloads, which reads as the switch not working.
+     
+     It does NOT cover the labels in TEMPLATE. Those are written into the DOM
+     once at mount and no redraw reaches them; they carry data-t-* markup and
+     hub-i18n re-applies it on every change. The original wording here said
+     "every label resolves at render time", which was never true of TEMPLATE and
+     is how the add button came to carry its translation call as literal
+     attribute text for eleven days. */
   const stopLang = onLanguageChange(() => { render(); hydrateImages(); });
 
   /* ----- api ----- */
@@ -361,7 +376,7 @@ export function mount(root, ctx) {
               ${i.ai_analysed_at ? `<span class="lb-ai" title="described automatically">✦</span>` : ""}
             </div>
           </button>
-          <label class="lb-select-control" title=t("lookbook.select_for_pdf")>
+          <label class="lb-select-control" title="${esc(t("lookbook.select_for_pdf"))}">
             <input class="lb-select" type="checkbox" data-select-id="${i.id}"
               aria-label="Select ${esc(itemName(i))} for PDF" ${selected ? "checked" : ""}>
             <span class="lb-select-mark" aria-hidden="true">✓</span>
@@ -947,7 +962,8 @@ const TEMPLATE = `
   <div class="lb-filters" id="lb-filters"></div>
   <div class="lb-err"></div>
   <div class="lb-grid" id="lb-grid"></div>
-  <button id="lb-add" type="button" title=t("lookbook.add_aria") aria-label=t("lookbook.add_aria")>+</button>
+  <button id="lb-add" type="button"
+    data-t-title="lookbook.add_aria" data-t-aria="lookbook.add_aria">+</button>
   <div id="lb-detail"><div class="lb-sheet" id="lb-sheet" tabindex="-1"></div></div>
 `;
 

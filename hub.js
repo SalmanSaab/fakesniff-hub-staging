@@ -12,8 +12,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789072407";
-import nl from "./lang/nl.js?v=1789072407";
+import en from "./lang/en.js?v=1789079472";
+import nl from "./lang/nl.js?v=1789079472";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
