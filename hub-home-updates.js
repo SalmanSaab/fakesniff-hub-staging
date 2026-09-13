@@ -1,7 +1,7 @@
 /* Codex — 2026-09-05: explicit Home lifecycle, separate from rendering and
    transport. The shell supplies only a verified, current membership context.
    Navigation preserves the mounted draft; identity changes destroy it. */
-export function createHomeUpdatesLifecycle({ loadModule, getContext, getRoots, onState = () => {} }) {
+export function createHomeUpdatesLifecycle({ loadModule, getContext, getRoots, onState = () => {}, beforeOpenComposer = () => {} }) {
   let entry = null;
 
   function destroy() {
@@ -85,6 +85,7 @@ export function createHomeUpdatesLifecycle({ loadModule, getContext, getRoots, o
     const handle = await sync({ active: true });
     if (!handle || handle !== entry?.handle || !isCurrent(entry)) return false;
     if (!["member", "admin", "owner"].includes(entry.ctx.member.role)) return false;
+    if (beforeOpenComposer() === false) return false;
     handle.openComposer();
     return true;
   }

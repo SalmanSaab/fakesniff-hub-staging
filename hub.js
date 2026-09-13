@@ -4,6 +4,7 @@ import { createHubAuth, validateHubConfig } from "./hub-auth.js";
 import { createConnectedWorkRepository, HubRepositoryError } from "./hub-work-repository.js";
 import { composeHomeActivity, normalizeHomeChanges } from "./hub-home-activity.js";
 import { createHomeUpdatesLifecycle } from "./hub-home-updates.js";
+import { createCompactHomeUpdates } from "./hub-home-compact.js";
 import { observeHubChrome } from "./hub-shell-layout.js";
 import {
   addTranslations,
@@ -13,8 +14,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789335632";
-import nl from "./lang/nl.js?v=1789335632";
+import en from "./lang/en.js?v=1789342389";
+import nl from "./lang/nl.js?v=1789342389";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -98,6 +99,9 @@ const state = {
   refreshWhenDialogCloses: false,
   lastRefreshedAt: 0,
   stale: false,
+  // Presentation freshness is independent of the stale/edit-permission flag.
+  // A verified empty snapshot is different from never having loaded one.
+  homeWorkRead: { status: "idle", hasSnapshot: false },
   activeSectionId: "home",
   mobileWorkStatus: "this_week",
   originalApproverId: "",
@@ -168,7 +172,15 @@ let restoreMobileMoreFocus = true;
 
 /* Codex — 2026-09-05: Updates is a Home component, not a self-registering
    screen. No module import or data request before verified membership. */
+const compactUpdates = createCompactHomeUpdates({
+  feed: get("home-update-feed"), previews: get("home-update-previews"),
+  readButton: get("home-read-loaded-updates"), reader: get("home-update-reader"),
+  composer: get("home-update-composer"), closeReader: get("home-close-reader"),
+  closeComposer: get("home-close-composer"), writeButton: get("home-write-update"),
+  fallbackButton: get("home-updates-refresh")
+});
 const homeUpdates = createHomeUpdatesLifecycle({
+  beforeOpenComposer: () => state.activeSectionId === "home" && compactUpdates.openComposer(),
   loadModule() {
     const url = new URL("./hub-updates.js", import.meta.url);
     url.search = new URL(import.meta.url).search;
@@ -181,6 +193,7 @@ const homeUpdates = createHomeUpdatesLifecycle({
   },
   getRoots: () => ({ compose: get("home-update-compose"), feed: get("home-update-feed") }),
   onState(status, ctx) {
+    compactUpdates.setState(status, ctx);
     const panel = get("home-updates-panel");
     panel.hidden = status === "idle";
     panel.classList.toggle("is-readonly", ctx?.member.role === "viewer");
@@ -415,6 +428,7 @@ function activateSection(sectionId, { focus = false } = {}) {
   void mountRegisteredSection(normalized);
   void homeUpdates.sync({ active: normalized === "home", refresh: sectionChanged });
   if (normalized !== "home") {
+    compactUpdates.closePanels({ restore: false });
     disconnectHomeActivityObserver();
   } else if (
     sectionChanged
@@ -611,11 +625,7 @@ function clearWorkspaceState() {
   hideAppError();
   get("work-nav-count").textContent = "0";
   get("work-nav-count").setAttribute("aria-label", t("work.nav_items_other", { n: localNumber(0) }));
-  get("home-active-work-count").textContent = localStatNumber(0);
-  get("home-active-work-note").textContent = t("home.no_active_owners");
-  get("home-week-count").textContent = localStatNumber(0);
-  get("home-review-count").textContent = localStatNumber(0);
-  get("home-waiting-count").textContent = localStatNumber(0);
+  setHomeWorkReadStatus("idle");
   get("home-focus-date").textContent = t("home.today");
   get("home-focus-value").textContent = t("home.focus_waiting_signin");
   get("home-focus-detail").textContent = t("home.signin_for_board");
@@ -1184,26 +1194,44 @@ function renderHomeFocus() {
   get("home-focus-detail").textContent = details[reason] || t("home.open_to_see_next");
 }
 
+function setHomeWorkReadStatus(status) {
+  state.homeWorkRead = {
+    status,
+    hasSnapshot: status === "idle" ? false : status === "ready" || state.homeWorkRead.hasSnapshot
+  };
+  renderHomeWorkCounts();
+}
+
+function renderHomeWorkCounts() {
+  const { status, hasSnapshot } = state.homeWorkRead;
+  for (const [id, stage] of [["week", "this_week"], ["review", "review"], ["waiting", "waiting"]]) {
+    get(`home-${id}-count`).textContent = hasSnapshot
+      ? localStatNumber(state.tasks.filter((task) => task.status === stage).length) : "—";
+  }
+  get("home-work-counts").setAttribute("aria-busy", String(status === "loading"));
+  const key = status === "loading" ? (hasSnapshot ? "home.work_checking_saved" : "home.work_checking")
+    : status === "error" ? (hasSnapshot ? "home.work_refresh_failed" : "home.work_check_failed")
+    : hasSnapshot ? "" : "home.work_not_checked";
+  const message = get("home-work-counts-status");
+  if (key) message.dataset.t = key;
+  else delete message.dataset.t;
+  message.textContent = key ? t(key) : "";
+  message.hidden = !key;
+  get("home-work-retry").hidden = status !== "error";
+}
+
 function renderSummary() {
-  const { total, active: activeCount } = workBoardCounts(state.tasks);
-  const active = state.tasks.filter((task) => ACTIVE_STATUSES.has(task.status));
+  const { total } = workBoardCounts(state.tasks);
   const week = state.tasks.filter((task) => task.status === "this_week");
   const review = state.tasks.filter((task) => task.status === "review");
   const waiting = state.tasks.filter((task) => task.status === "waiting");
-  const owners = new Set(active.map((task) => task.owner_id).filter(Boolean));
 
   /* Codex — 2026-09-01: the number attached to Work reads as the number of
      saved cards. Salman's first real use exposed that counting only active
      lanes made one Backlog plus one Done card misleadingly display as zero. */
   get("work-nav-count").textContent = localNumber(total);
   get("work-nav-count").setAttribute("aria-label", t(pluralKey("work.nav_items", total), { n: localNumber(total) }));
-  get("home-active-work-count").textContent = localStatNumber(activeCount);
-  get("home-active-work-note").textContent = owners.size
-    ? t(pluralKey("home.across_owners", owners.size), { n: localNumber(owners.size) })
-    : t("home.no_active_owners");
-  get("home-week-count").textContent = localStatNumber(week.length);
-  get("home-review-count").textContent = localStatNumber(review.length);
-  get("home-waiting-count").textContent = localStatNumber(waiting.length);
+  renderHomeWorkCounts();
   renderHomeFocus();
 
   renderHomeList(
@@ -1950,6 +1978,7 @@ async function reloadLatestConflict() {
   if (!conflict || !userId || state.saving || !state.repository) return;
   const generation = state.generation;
   setSaving(true, "work.reloading");
+  setHomeWorkReadStatus("loading");
   clearDialogStatus();
   clearFormError();
   try {
@@ -1966,6 +1995,7 @@ async function reloadLatestConflict() {
     state.workstreams = workspaceData.workstreams;
     state.tasks = workspaceData.tasks;
     state.stale = false;
+    setHomeWorkReadStatus("ready");
     state.lastRefreshedAt = Date.now();
     void homeUpdates.sync({ active: state.activeSectionId === "home" });
     const latest = taskById(conflict.id);
@@ -2053,6 +2083,8 @@ async function reloadLatestConflict() {
     }
     boardStatus.textContent = t("work.latest_board_status");
   } catch {
+    if (generation !== state.generation || state.user?.id !== userId) return;
+    setHomeWorkReadStatus("error");
     showTranslatedFormError("work.latest_failed");
   } finally {
     if (generation === state.generation) setSaving(false);
@@ -2089,6 +2121,7 @@ async function refreshTasks({ quiet = false } = {}) {
   disconnectHomeActivityObserver();
   if (state.homeActivity.status === "loading") state.homeActivity.status = "idle";
   state.refreshing = true;
+  setHomeWorkReadStatus("loading");
   newWorkButton.disabled = true;
   refreshButton.disabled = true;
   mobileRefreshButton.disabled = true;
@@ -2111,6 +2144,7 @@ async function refreshTasks({ quiet = false } = {}) {
     state.tasks = workspaceData.tasks;
     state.stale = false;
     state.refreshing = false;
+    setHomeWorkReadStatus("ready");
     hideAppError();
     if (dialog.open) {
       state.formBaseline = null;
@@ -2127,6 +2161,7 @@ async function refreshTasks({ quiet = false } = {}) {
     ) return false;
     state.refreshing = false;
     state.stale = true;
+    setHomeWorkReadStatus("error");
     newWorkButton.disabled = true;
     homeNewWorkAction.hidden = true;
     if (dialog.open) setFormReadOnly(true);
@@ -2273,6 +2308,7 @@ async function reconcileSession(session, event = "MANUAL") {
   }
   if (state.user && incomingUserId !== state.user.id) clearWorkspaceState();
   showChecking();
+  setHomeWorkReadStatus("loading");
   try {
     const userResponse = await state.auth.getVerifiedUser();
     if (generation !== state.generation) return;
@@ -2294,6 +2330,7 @@ async function reconcileSession(session, event = "MANUAL") {
     state.workstreams = workspaceData.workstreams;
     state.tasks = workspaceData.tasks;
     state.stale = false;
+    setHomeWorkReadStatus("ready");
     renderWorkspace({ focus: true });
   } catch {
     if (generation !== state.generation) return;
@@ -2566,15 +2603,15 @@ function bindEvents() {
   });
   accessSignOutButton.addEventListener("click", signOut);
   refreshButton.addEventListener("click", requestWorkspaceRefresh);
-  get("home-write-update").addEventListener("click", async () => {
-    if (await homeUpdates.openComposer()) get("home-update-compose-area").scrollIntoView({ block: "start" });
+  get("home-write-update").addEventListener("click", () => {
+    void homeUpdates.openComposer();
   });
   get("home-read-updates").addEventListener("click", () => {
-    get("home-update-feed-title").scrollIntoView({ block: "start" });
-    get("home-update-feed-title").focus({ preventScroll: true });
+    compactUpdates.openReader();
   });
   get("home-updates-retry").addEventListener("click", () => { void homeUpdates.sync({ active: true, refresh: true }); });
   get("home-updates-refresh").addEventListener("click", () => { void homeUpdates.sync({ active: true, refresh: true }); });
+  get("home-work-retry").addEventListener("click", requestWorkspaceRefresh);
   get("dismiss-app-error").addEventListener("click", hideAppError);
   get("dismiss-hub-notice").addEventListener("click", clearNotice);
   newWorkButton.addEventListener("click", openNewTask);
@@ -2651,15 +2688,6 @@ function bindEvents() {
     window.location.hash = "work";
     activateSection("work");
     window.setTimeout(openNewTask, 0);
-  });
-  get("home-quick-grid").addEventListener("click", (event) => {
-    const link = event.target.closest('.home-quick-action[href^="#"]');
-    if (!link || link === homeNewWorkAction) return;
-    activateSection(link.getAttribute("href").slice(1), { focus: true });
-  });
-  get("home-stat-grid").addEventListener("click", (event) => {
-    const link = event.target.closest("[data-home-work-stage]");
-    if (link) setMobileWorkStatus(link.dataset.homeWorkStage);
   });
 }
 
