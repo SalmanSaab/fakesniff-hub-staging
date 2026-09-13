@@ -13,23 +13,24 @@
   <title>FAKESNIFF — company hub</title>
   <!-- Claude — 2026-08-12: shared design tokens. Must load before every other
        stylesheet so the shell and the modules resolve the same palette. -->
-  <link rel="stylesheet" href="hub-tokens.css?v=1789079472">
-  <link rel="stylesheet" href="hub.css?v=1789079472">
-  <script src="hub-config.js?v=1789079472" defer></script>
-  <script type="module" src="hub.js?v=1789079472"></script>
+  <link rel="stylesheet" href="hub-tokens.css?v=1789335632">
+  <link rel="stylesheet" href="hub.css?v=1789335632">
+  <link rel="stylesheet" href="hub-start.css?v=1789335632">
+  <script src="hub-config.js?v=1789335632" defer></script>
+  <script type="module" src="hub.js?v=1789335632"></script>
   <!-- Claude — 2026-08-12: Idea Lab module. Loads after hub.js so window.Hub
        exists to register against. Its stylesheet is same-origin, so the CSP
        (style-src 'self') stays intact. -->
-  <script type="module" src="hub-idea-lab.js?v=1789079472"></script>
+  <script type="module" src="hub-idea-lab.js?v=1789335632"></script>
   <!-- Claude — 2026-08-12: Lookbook (Emiel's visual reference container). -->
-  <script type="module" src="hub-lookbook.js?v=1789079472"></script>
-  <script type="module" src="hub-decisions.js?v=1789079472"></script>
+  <script type="module" src="hub-lookbook.js?v=1789335632"></script>
+  <script type="module" src="hub-decisions.js?v=1789335632"></script>
   <!-- Claude — 2026-08-13: Designs. Not a second Lookbook: this is where a
        graphic gets tried on a garment before anyone cuts fabric. -->
-  <script type="module" src="hub-designs.js?v=1789079472"></script>
+  <script type="module" src="hub-designs.js?v=1789335632"></script>
   <!-- Claude — 2026-08-13: the assistant. Talks only to the Edge Function;
        the Gemini key never reaches this page. -->
-  <script type="module" src="hub-assistant.js?v=1789079472"></script>
+  <script type="module" src="hub-assistant.js?v=1789335632"></script>
 </head>
 <body>
   <!-- Codex — 2026-08-11: publishable Hub shell. Company records render only after authenticated membership is verified. -->
@@ -102,16 +103,16 @@
           <span class="nav-label" data-t="nav.work">Work</span>
           <span id="work-nav-count" class="nav-count" aria-label="0 work items on the board">0</span>
         </a>
-        <a class="nav-link" href="#decisions" data-mobile-nav="primary">
+        <a class="nav-link" href="#decisions" data-mobile-nav="secondary">
           <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6h14v10H9l-4 3V6Z"></path><path d="m9 11 2 2 4-4"></path></svg></span>
           <span class="nav-label" data-t="nav.decisions">Decisions</span>
         </a>
         <span class="nav-group-label" data-t="nav.create_group">Create</span>
-        <a class="nav-link" href="#lookbook" data-mobile-nav="primary">
+        <a class="nav-link" href="#lookbook" data-mobile-nav="secondary">
           <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.5"></circle><path d="m6 17 4-4 3 3 2-2 3 3"></path></svg></span>
           <span class="nav-label" data-t="nav.lookbook">Lookbook</span>
         </a>
-        <a class="nav-link" href="#idea-lab" data-mobile-nav="secondary">
+        <a class="nav-link" href="#idea-lab" data-mobile-nav="primary">
           <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 17h6M10 20h4"></path><path d="M8 14c-1.3-1.1-2-2.6-2-4.2A6 6 0 0 1 18 10c0 1.6-.7 3-2 4.1-.8.7-1 1.3-1 1.9H9c0-.6-.2-1.3-1-2Z"></path></svg></span>
           <span class="nav-label" data-t="nav.idea_lab">Idea Lab</span>
         </a>
@@ -142,7 +143,9 @@
           </div>
           <button id="close-mobile-more" class="dialog-close" type="button" aria-label="Close more actions" data-t-aria="nav.close_more">×</button>
         </div>
-        <nav class="mobile-more-links" aria-label="Creation tools" data-t-aria="nav.create_tools_aria">
+        <nav class="mobile-more-links" aria-label="Hub sections" data-t-aria="shell.hub_sections">
+          <a href="#decisions"><strong data-t="nav.decisions">Decisions</strong><span data-t="home.record_decision_hint">Write down what the team agreed</span></a>
+          <a href="#lookbook"><strong data-t="nav.lookbook">Lookbook</strong><span data-t="home.add_reference_hint">Upload a photo or paste a link</span></a>
           <a href="#idea-lab">
             <strong data-t="nav.idea_lab">Idea Lab</strong>
             <span data-t="nav.idea_lab_hint">Find, save or add an idea</span>
@@ -160,7 +163,7 @@
     </aside>
 
     <main id="main-content" class="workspace" tabindex="-1">
-      <header class="topbar">
+      <header id="hub-topbar" class="topbar">
         <a class="topbar-brand" href="#home" aria-label="FAKESNIFF Hub home" data-t-aria="shell.home_aria">fakesniff.</a>
         <div>
           <p id="workspace-label" class="eyebrow">FAKESNIFF workspace</p>
@@ -186,68 +189,27 @@
       </div>
 
       <section id="home" class="page-section hero-section" aria-labelledby="home-title" tabindex="-1">
-        <!-- Codex — 2026-08-31: Home is now the daily starting point, not a
-             brand poster followed by a duplicate dashboard. -->
+        <!-- Codex — 2026-09-13: first real-data redesign slice. These are the
+             existing mount roots and actions, not the private preview's fixtures. -->
         <div class="home-start">
           <div class="hero-copy">
             <p id="home-member-kicker" class="kicker" data-t="home.workspace_overview">Workspace overview</p>
-            <h1 id="home-title"><span data-t="home.hero_lead">What needs</span><br><em data-t="home.hero_emphasis">you.</em></h1>
+            <h1 id="home-title" data-t="home.today">Today</h1>
             <p class="hero-note" data-t="home.hero_note">Your next move, new activity and the team’s work — without hunting through every page.</p>
             <div class="home-update-shortcut">
               <button id="home-write-update" class="primary-button" type="button" aria-controls="home-update-compose" hidden data-t="home.write_update">Write update</button>
               <button id="home-read-updates" class="secondary-button" type="button" aria-controls="home-update-feed" hidden data-t="home.read_updates">Read team updates</button>
             </div>
           </div>
+        </div>
+        <div class="home-dashboard">
+          <div class="home-work-column">
           <div class="week-signal home-focus" role="group" aria-label="Your next move" data-t-aria="home.next_move_aria">
             <span id="home-focus-date" class="signal-label" data-t="home.today">Today</span>
             <span id="home-focus-value" class="signal-value" data-t="home.nothing_planned">Nothing is planned yet.</span>
             <span id="home-focus-detail" class="signal-detail" role="status" aria-live="polite" aria-atomic="true" data-t="home.create_first_hint">Open Work to create the first shared item.</span>
             <button id="home-focus-action" class="signal-action" type="button" hidden data-t="home.open_item">Open item</button>
           </div>
-        </div>
-
-        <section class="home-quick-actions" aria-labelledby="home-quick-title">
-          <p id="home-quick-title" class="eyebrow" data-t="home.quick_actions">Common actions</p>
-          <div id="home-quick-grid" class="home-quick-grid" role="group" aria-label="Common Hub actions" data-t-aria="home.quick_actions_aria">
-            <a id="home-new-work-action" class="home-quick-action" href="#work">
-              <span class="home-quick-icon" aria-hidden="true">＋</span>
-              <span><strong data-t="home.add_work">Add work</strong><small data-t="home.add_work_hint">Something the team needs to do</small></span>
-            </a>
-            <a class="home-quick-action" href="#idea-lab">
-              <span class="home-quick-icon" aria-hidden="true">✦</span>
-              <span><strong data-t="home.add_idea">Open Idea Lab</strong><small data-t="home.add_idea_hint">Save a thought, statement or trend</small></span>
-            </a>
-            <a class="home-quick-action" href="#lookbook">
-              <span class="home-quick-icon" aria-hidden="true">▧</span>
-              <span><strong data-t="home.add_reference">Open Lookbook</strong><small data-t="home.add_reference_hint">Upload a photo or paste a link</small></span>
-            </a>
-            <a class="home-quick-action" href="#decisions">
-              <span class="home-quick-icon" aria-hidden="true">✓</span>
-              <span><strong data-t="home.record_decision">Open Decisions</strong><small data-t="home.record_decision_hint">Write down what the team agreed</small></span>
-            </a>
-          </div>
-        </section>
-
-        <div class="home-command-grid">
-          <!-- Codex — 2026-08-13: a private, server-receipted check-in that
-               speaks first without sending raw audit snapshots to the browser. -->
-          <article class="panel home-changes-panel" aria-labelledby="home-changes-title">
-            <div class="panel-heading home-changes-heading">
-              <div>
-                <p class="eyebrow" data-t="home.checkin_eyebrow">Automatic check-in</p>
-                <h2 id="home-changes-title" data-t="home.since_last_look">Since your last look</h2>
-              </div>
-              <div class="home-changes-actions">
-                <span id="home-changes-status" class="micro-status" role="status" aria-live="polite" data-t="home.checking">Checking…</span>
-                <button id="home-changes-retry" class="micro-link home-changes-retry" type="button" hidden data-t="home.retry">Try again</button>
-              </div>
-            </div>
-            <div id="home-changes-list" class="home-changes-list" aria-live="polite" aria-busy="true">
-              <p class="module-empty-copy" data-t="home.checking_recent">Checking recent changes…</p>
-            </div>
-            <p id="home-changes-note" class="home-changes-note" hidden></p>
-          </article>
-
           <div class="home-work-stack">
             <article class="panel priorities-panel">
               <div class="panel-heading">
@@ -271,10 +233,8 @@
               <div id="home-attention-list" class="home-work-list"></div>
             </article>
           </div>
-        </div>
-
-        <!-- Codex — 2026-09-05: explicit mount roots stay empty in source.
-             Current work comes first; reports stay in one dated team feed. -->
+          </div>
+          <div class="home-team-column">
         <section id="home-updates-panel" class="panel home-updates-panel" aria-labelledby="home-updates-title" hidden>
           <div class="panel-heading home-updates-heading">
             <div>
@@ -289,15 +249,54 @@
             <button id="home-updates-retry" class="secondary-button" type="button" hidden data-t="home.retry">Try again</button>
           </div>
           <div class="home-updates-grid">
+            <section class="home-updates-team" aria-labelledby="home-update-feed-title">
+              <h3 id="home-update-feed-title" tabindex="-1" data-t="home.team_updates">From the team</h3>
+              <div id="home-update-feed"></div>
+            </section>
             <section id="home-update-compose-area" aria-labelledby="home-update-compose-title">
               <h3 id="home-update-compose-title" data-t="home.your_update">Your update</h3>
               <p class="home-updates-help" data-t="home.updates_hint">A few lines are enough. Share what is done, what is still open and what comes next.</p>
               <div id="home-update-compose"></div>
             </section>
-            <section class="home-updates-team" aria-labelledby="home-update-feed-title">
-              <h3 id="home-update-feed-title" tabindex="-1" data-t="home.team_updates">From the team</h3>
-              <div id="home-update-feed"></div>
-            </section>
+          </div>
+        </section>
+          </div>
+        </div>
+          <article class="panel home-changes-panel" aria-labelledby="home-changes-title">
+            <div class="panel-heading home-changes-heading">
+              <div>
+                <p class="eyebrow" data-t="home.checkin_eyebrow">Automatic check-in</p>
+                <h2 id="home-changes-title" data-t="home.since_last_look">Since your last look</h2>
+              </div>
+              <div class="home-changes-actions">
+                <span id="home-changes-status" class="micro-status" role="status" aria-live="polite" data-t="home.checking">Checking…</span>
+                <button id="home-changes-retry" class="micro-link home-changes-retry" type="button" hidden data-t="home.retry">Try again</button>
+              </div>
+            </div>
+            <div id="home-changes-list" class="home-changes-list" aria-live="polite" aria-busy="true">
+              <p class="module-empty-copy" data-t="home.checking_recent">Checking recent changes…</p>
+            </div>
+            <p id="home-changes-note" class="home-changes-note" hidden></p>
+          </article>
+        <section class="home-quick-actions" aria-labelledby="home-quick-title">
+          <p id="home-quick-title" class="eyebrow" data-t="home.quick_actions">Common actions</p>
+          <div id="home-quick-grid" class="home-quick-grid" role="group" aria-label="Common Hub actions" data-t-aria="home.quick_actions_aria">
+            <a id="home-new-work-action" class="home-quick-action" href="#work">
+              <span class="home-quick-icon" aria-hidden="true">＋</span>
+              <span><strong data-t="home.add_work">Add work</strong><small data-t="home.add_work_hint">Something the team needs to do</small></span>
+            </a>
+            <a class="home-quick-action" href="#idea-lab">
+              <span class="home-quick-icon" aria-hidden="true">✦</span>
+              <span><strong data-t="home.add_idea">Open Idea Lab</strong><small data-t="home.add_idea_hint">Save a thought, statement or trend</small></span>
+            </a>
+            <a class="home-quick-action" href="#lookbook">
+              <span class="home-quick-icon" aria-hidden="true">▧</span>
+              <span><strong data-t="home.add_reference">Open Lookbook</strong><small data-t="home.add_reference_hint">Upload a photo or paste a link</small></span>
+            </a>
+            <a class="home-quick-action" href="#decisions">
+              <span class="home-quick-icon" aria-hidden="true">✓</span>
+              <span><strong data-t="home.record_decision">Open Decisions</strong><small data-t="home.record_decision_hint">Write down what the team agreed</small></span>
+            </a>
           </div>
         </section>
 

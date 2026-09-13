@@ -4,6 +4,7 @@ import { createHubAuth, validateHubConfig } from "./hub-auth.js";
 import { createConnectedWorkRepository, HubRepositoryError } from "./hub-work-repository.js";
 import { composeHomeActivity, normalizeHomeChanges } from "./hub-home-activity.js";
 import { createHomeUpdatesLifecycle } from "./hub-home-updates.js";
+import { observeHubChrome } from "./hub-shell-layout.js";
 import {
   addTranslations,
   currentLanguage,
@@ -12,8 +13,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789079472";
-import nl from "./lang/nl.js?v=1789079472";
+import en from "./lang/en.js?v=1789335632";
+import nl from "./lang/nl.js?v=1789335632";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -71,7 +72,9 @@ const SECTION_LABEL_KEYS = Object.freeze({
   decisions: "nav.decisions"
 });
 const CORE_REFRESH_SECTIONS = new Set(["home", "work"]);
-const MOBILE_CREATE_SECTIONS = new Set(["idea-lab", "designs"]);
+// Codex — 13 Sep: Start, Work and Idea Lab are primary on phones; the other
+// existing sections remain in More. Keep its current-section feedback truthful.
+const MOBILE_CREATE_SECTIONS = new Set(["decisions", "lookbook", "designs"]);
 const PRODUCTION_SUPABASE_HOST = "kayxejofqyxoqlberrgw.supabase.co";
 const registeredSections = new Map();
 
@@ -119,6 +122,7 @@ const state = {
 };
 
 const get = (id) => document.getElementById(id);
+observeHubChrome(get("hub-topbar"), document.documentElement);
 const accessScreen = get("access-screen");
 const appShell = get("app-shell");
 const accessLoading = get("access-loading");

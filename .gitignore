@@ -4,3 +4,6 @@ hub-preview.local.js
 
 # Codex — 2026-08-13: render/browser QA files must never enter a Pages deploy.
 tmp/
+
+# Claude — 2026-09-11: dev tooling only, never shipped and never committed.
+node_modules/
