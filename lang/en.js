@@ -105,6 +105,8 @@ export default {
   "home.updates_eyebrow": "Keep each other up to date",
   "home.updates_heading": "Daily updates",
   "home.team_work": "Teamwork",
+  "home.collapse_updates": "Collapse updates",
+  "home.collapse_editor": "Collapse editor",
   "home.work_not_checked": "Work has not been checked yet.",
   "home.work_checking": "Checking work…",
   "home.work_checking_saved": "Checking work… Showing last-loaded counts.",

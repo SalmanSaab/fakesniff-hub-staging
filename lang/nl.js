@@ -107,6 +107,8 @@ export default {
   "home.updates_eyebrow": "Houd elkaar op de hoogte",
   "home.updates_heading": "Dagelijkse updates",
   "home.team_work": "Teamwerk",
+  "home.collapse_updates": "Updates inklappen",
+  "home.collapse_editor": "Schrijfveld inklappen",
   "home.work_not_checked": "Het werk is nog niet gecontroleerd.",
   "home.work_checking": "Werk controleren…",
   "home.work_checking_saved": "Werk controleren… Je ziet de laatst geladen aantallen.",

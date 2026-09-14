@@ -14,8 +14,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789342389";
-import nl from "./lang/nl.js?v=1789342389";
+import en from "./lang/en.js?v=1789345030";
+import nl from "./lang/nl.js?v=1789345030";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -174,7 +174,7 @@ let restoreMobileMoreFocus = true;
    screen. No module import or data request before verified membership. */
 const compactUpdates = createCompactHomeUpdates({
   feed: get("home-update-feed"), previews: get("home-update-previews"),
-  readButton: get("home-read-loaded-updates"), reader: get("home-update-reader"),
+  readButton: get("home-read-loaded-updates"), readShortcut: get("home-read-updates"), reader: get("home-update-reader"),
   composer: get("home-update-composer"), closeReader: get("home-close-reader"),
   closeComposer: get("home-close-composer"), writeButton: get("home-write-update"),
   fallbackButton: get("home-updates-refresh")

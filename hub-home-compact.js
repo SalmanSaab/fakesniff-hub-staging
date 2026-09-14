@@ -1,17 +1,29 @@
 /* Codex — Home presentation only. Claude's update module still owns the two
- * live roots, requests, drafts and corrections. The reading dialog contains
+ * live roots, requests, drafts and corrections. The inline reader contains
  * the ORIGINAL feed, not cloned controls. Previews derive text from its rendered
  * .hu-day/.hu-item contract; they never fetch data or invent report summaries.
  * MutationObserver follows internal retries, corrections and language changes.
  */
 import { t } from "./hub-i18n.js";
 
-export function createCompactHomeUpdates({ feed, previews, readButton, reader, composer, closeReader, closeComposer, writeButton, fallbackButton, Observer = globalThis.MutationObserver }) {
+export function createCompactHomeUpdates({ feed, previews, readButton, readShortcut, reader, composer, closeReader, closeComposer, writeButton, fallbackButton, Observer = globalThis.MutationObserver }) {
   const doc = feed.ownerDocument;
   let enabled = false;
   let canPost = false;
   let returnTo = null;
-  let restoreFocus = true;
+  let hasReports = false;
+
+  function syncExpanded() {
+    const reading = !reader.hidden;
+    for (const button of [readButton, readShortcut, closeReader, ...previews.querySelectorAll('.home-report-preview')]) {
+      button?.setAttribute("aria-expanded", String(reading));
+    }
+    for (const button of [writeButton, closeComposer]) button.setAttribute("aria-expanded", String(!composer.hidden));
+    // The original feed owns feedback while expanded. Do not announce its
+    // copied status/alert or show the same reports twice on the page.
+    previews.hidden = reading;
+    readButton.hidden = !hasReports || reading;
+  }
 
   function node(tag, className, text) {
     const el = doc.createElement(tag);
@@ -21,45 +33,57 @@ export function createCompactHomeUpdates({ feed, previews, readButton, reader, c
   }
 
   function closePanels({ restore = true } = {}) {
-    restoreFocus = restore;
-    if (reader.open) reader.close();
-    if (composer.open) composer.close();
+    const wasOpen = !reader.hidden || !composer.hidden;
+    reader.hidden = true;
+    composer.hidden = true;
+    syncExpanded();
+    if (restore && wasOpen) restoreOpener();
   }
 
   function openReader(card) {
     if (!enabled) return;
+    closePanels({ restore: false });
     returnTo = doc.activeElement;
-    restoreFocus = true;
-    if (!reader.open) reader.showModal();
-    closeReader.focus({ preventScroll: true });
-    if (card?.isConnected) card.scrollIntoView({ block: "start" });
-    else reader.scrollTop = 0;
+    reader.hidden = false;
+    syncExpanded();
+    // Focus follows the report brought into view, not a collapse button that
+    // may be above it. A temporary tabindex does not add every report to Tab.
+    const target = card?.isConnected ? card : feed.querySelector(".hu-item") || closeReader;
+    if (target !== closeReader) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start" });
   }
 
   function openComposer() {
     if (!enabled || !canPost) return false;
-    // close events are queued: do not let the reader steal focus back from
-    // the correction field after its own synchronous handler has focused it.
-    if (reader.open) reader.close();
+    // One expansion at a time, without unmounting either root or discarding a
+    // parked draft/correction. Capture still reveals the form before startEdit.
+    closePanels({ restore: false });
     returnTo = writeButton;
-    restoreFocus = true;
-    if (!composer.open) composer.showModal();
-    composer.scrollTop = 0;
+    composer.hidden = false;
+    syncExpanded();
+    composer.scrollIntoView({ block: "start" });
     return true;
   }
 
-  function restore() {
-    if (!restoreFocus || !enabled || reader.open || composer.open) return;
-    const target = [returnTo, readButton, fallbackButton].find((el) => el?.isConnected && !el.hidden);
+  function restoreOpener() {
+    if (!enabled) return;
+    const target = [returnTo, readButton, fallbackButton].find((el) => {
+      if (!el?.isConnected) return false;
+      for (let ancestor = el; ancestor; ancestor = ancestor.parentElement) if (ancestor.hidden) return false;
+      return true;
+    });
     target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "nearest" });
   }
 
   function render() {
     previews.replaceChildren();
-    readButton.hidden = true;
-    if (!enabled) return;
     const rows = [...feed.querySelectorAll(".hu-item")];
     const failure = feed.querySelector('[role="alert"]');
+    hasReports = enabled && !failure && rows.length > 0;
+    syncExpanded();
+    if (!enabled) return;
     if (failure || !rows.length) {
       const status = node("p", "home-report-status", failure?.textContent || feed.textContent);
       status.setAttribute("role", failure ? "alert" : "status");
@@ -74,7 +98,6 @@ export function createCompactHomeUpdates({ feed, previews, readButton, reader, c
       return;
     }
     readButton.textContent = t("home.read_loaded_updates", { n: rows.length });
-    readButton.hidden = false;
     let day = "";
     let count = 0;
     for (const child of feed.children) {
@@ -83,7 +106,8 @@ export function createCompactHomeUpdates({ feed, previews, readButton, reader, c
       count += 1;
       const button = node("button", "home-report-preview", "");
       button.type = "button";
-      button.setAttribute("aria-haspopup", "dialog");
+      button.setAttribute("aria-controls", reader.id);
+      button.setAttribute("aria-expanded", String(!reader.hidden));
       const author = child.querySelector(".hu-who")?.textContent || "";
       const time = child.querySelector(".hu-when")?.textContent || "";
       const edited = child.querySelector(".hu-edited")?.textContent || "";
@@ -103,10 +127,8 @@ export function createCompactHomeUpdates({ feed, previews, readButton, reader, c
   const observer = new Observer(render);
   observer.observe(feed, { childList: true, subtree: true, characterData: true });
   readButton.addEventListener("click", () => openReader());
-  closeReader.addEventListener("click", () => reader.close());
-  closeComposer.addEventListener("click", () => composer.close());
-  reader.addEventListener("close", restore);
-  composer.addEventListener("close", restore);
+  closeReader.addEventListener("click", () => closePanels());
+  closeComposer.addEventListener("click", () => closePanels());
   feed.addEventListener("click", (event) => {
     const edit = event.target.closest(".hu-edit");
     if (edit && feed.contains(edit) && !edit.disabled) openComposer();
@@ -120,7 +142,7 @@ export function createCompactHomeUpdates({ feed, previews, readButton, reader, c
       if (!enabled) {
         closePanels({ restore: false });
         returnTo = null;
-      } else if (!canPost && composer.open) composer.close();
+      } else if (!canPost && !composer.hidden) closePanels({ restore: false });
       render(); // synchronous clearing on identity teardown, before observer delivery
     },
   });
