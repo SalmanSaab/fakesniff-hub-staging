@@ -1,149 +1,92 @@
-/* Codex — Home presentation only. Claude's update module still owns the two
- * live roots, requests, drafts and corrections. The inline reader contains
- * the ORIGINAL feed, not cloned controls. Previews derive text from its rendered
- * .hu-day/.hu-item contract; they never fetch data or invent report summaries.
- * MutationObserver follows internal retries, corrections and language changes.
+/* Codex — Home presentation only. Claude's module owns the original feed,
+ * requests, drafts and corrections. Show more reveals those SAME report nodes
+ * below the first two; no copied previews, second reader or close control.
+ * MutationObserver follows refresh/correction/language output, not attributes
+ * changed here. Navigation never folds a list someone has already expanded.
  */
 import { t } from "./hub-i18n.js";
 
-export function createCompactHomeUpdates({ feed, previews, readButton, readShortcut, reader, composer, closeReader, closeComposer, writeButton, fallbackButton, Observer = globalThis.MutationObserver }) {
-  const doc = feed.ownerDocument;
+export function createCompactHomeUpdates({ feed, readButton, composer, writeButton, fallbackButton, Observer = globalThis.MutationObserver }) {
   let enabled = false;
   let canPost = false;
-  let returnTo = null;
-  let hasReports = false;
+  let expanded = false;
 
-  function syncExpanded() {
-    const reading = !reader.hidden;
-    for (const button of [readButton, readShortcut, closeReader, ...previews.querySelectorAll('.home-report-preview')]) {
-      button?.setAttribute("aria-expanded", String(reading));
+  function render() {
+    const rows = [...feed.querySelectorAll(".hu-item")];
+    let count = 0;
+    let day = null;
+    for (const child of feed.children) {
+      if (child.classList.contains("hu-day")) {
+        day = child;
+        day.hidden = true;
+      }
+      if (!child.classList.contains("hu-item")) continue;
+      child.hidden = !enabled || (!expanded && count >= 2);
+      count += 1;
+      if (!child.hidden && day) day.hidden = false;
     }
-    for (const button of [writeButton, closeComposer]) button.setAttribute("aria-expanded", String(!composer.hidden));
-    // The original feed owns feedback while expanded. Do not announce its
-    // copied status/alert or show the same reports twice on the page.
-    previews.hidden = reading;
-    readButton.hidden = !hasReports || reading;
+    const remaining = Math.max(0, rows.length - 2);
+    readButton.hidden = !enabled || expanded || !remaining;
+    readButton.textContent = t("home.show_more_updates", { n: remaining });
+    readButton.setAttribute("aria-expanded", String(expanded));
+    writeButton.setAttribute("aria-expanded", String(!composer.hidden));
   }
 
-  function node(tag, className, text) {
-    const el = doc.createElement(tag);
-    el.className = className;
-    el.textContent = text;
-    return el;
-  }
-
-  function closePanels({ restore = true } = {}) {
-    const wasOpen = !reader.hidden || !composer.hidden;
-    reader.hidden = true;
-    composer.hidden = true;
-    syncExpanded();
-    if (restore && wasOpen) restoreOpener();
-  }
-
-  function openReader(card) {
+  function showMore() {
     if (!enabled) return;
-    closePanels({ restore: false });
-    returnTo = doc.activeElement;
-    reader.hidden = false;
-    syncExpanded();
-    // Focus follows the report brought into view, not a collapse button that
-    // may be above it. A temporary tabindex does not add every report to Tab.
-    const target = card?.isConnected ? card : feed.querySelector(".hu-item") || closeReader;
-    if (target !== closeReader) target.setAttribute("tabindex", "-1");
+    const next = [...feed.querySelectorAll(".hu-item")].find(row => row.hidden);
+    expanded = true;
+    // Transfer focus before removing the button. No scrollIntoView: the first
+    // two reports stay exactly where the person was reading them.
+    if (next) {
+      next.hidden = false;
+      next.setAttribute("tabindex", "-1");
+      next.focus({ preventScroll: true });
+    }
+    render();
+  }
+
+  function openReader() {
+    if (!enabled) return;
+    // The viewer shortcut navigates to the existing list, never another reader.
+    const target = feed.querySelector(".hu-item") || fallbackButton;
+    target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });
     target.scrollIntoView({ block: "start" });
   }
 
   function openComposer() {
     if (!enabled || !canPost) return false;
-    // One expansion at a time, without unmounting either root or discarding a
-    // parked draft/correction. Capture still reveals the form before startEdit.
-    closePanels({ restore: false });
-    returnTo = writeButton;
     composer.hidden = false;
-    syncExpanded();
-    composer.scrollIntoView({ block: "start" });
+    writeButton.setAttribute("aria-expanded", "true");
+    // Correction capture still reveals before the original module focuses.
+    // Reading stays expanded independently; no panel switch or draft reset.
     return true;
   }
 
-  function restoreOpener() {
-    if (!enabled) return;
-    const target = [returnTo, readButton, fallbackButton].find((el) => {
-      if (!el?.isConnected) return false;
-      for (let ancestor = el; ancestor; ancestor = ancestor.parentElement) if (ancestor.hidden) return false;
-      return true;
-    });
-    target?.focus({ preventScroll: true });
-    target?.scrollIntoView({ block: "nearest" });
-  }
-
-  function render() {
-    previews.replaceChildren();
-    const rows = [...feed.querySelectorAll(".hu-item")];
-    const failure = feed.querySelector('[role="alert"]');
-    hasReports = enabled && !failure && rows.length > 0;
-    syncExpanded();
-    if (!enabled) return;
-    if (failure || !rows.length) {
-      const status = node("p", "home-report-status", failure?.textContent || feed.textContent);
-      status.setAttribute("role", failure ? "alert" : "status");
-      previews.append(status);
-      const retry = feed.querySelector(".hu-retry");
-      if (retry) {
-        const button = node("button", "secondary-button", retry.textContent);
-        button.type = "button";
-        button.addEventListener("click", () => retry.click());
-        previews.append(button);
-      }
-      return;
-    }
-    readButton.textContent = t("home.read_loaded_updates", { n: rows.length });
-    let day = "";
-    let count = 0;
-    for (const child of feed.children) {
-      if (child.classList.contains("hu-day")) day = child.textContent;
-      if (!child.classList.contains("hu-item") || count >= 2) continue;
-      count += 1;
-      const button = node("button", "home-report-preview", "");
-      button.type = "button";
-      button.setAttribute("aria-controls", reader.id);
-      button.setAttribute("aria-expanded", String(!reader.hidden));
-      const author = child.querySelector(".hu-who")?.textContent || "";
-      const time = child.querySelector(".hu-when")?.textContent || "";
-      const edited = child.querySelector(".hu-edited")?.textContent || "";
-      button.append(node("strong", "home-report-author", author));
-      button.append(node("span", "home-report-meta", [day, time, edited].filter(Boolean).join(" · ")));
-      const line = child.querySelector(".hu-line");
-      const label = line?.querySelector(".hu-line-label")?.textContent || "";
-      const value = line?.querySelector(".hu-line-text")?.textContent || "";
-      const excerpt = value.length > 150 ? `${value.slice(0, 150)}…` : value;
-      button.append(node("span", "home-report-excerpt", `${label}: ${excerpt}`));
-      button.append(node("span", "home-report-open", t("home.read_full_update")));
-      button.addEventListener("click", () => openReader(child));
-      previews.append(button);
-    }
+  function closeComposer({ restore = true } = {}) {
+    const wasOpen = !composer.hidden;
+    composer.hidden = true;
+    writeButton.setAttribute("aria-expanded", "false");
+    if (restore && wasOpen && enabled) writeButton.focus({ preventScroll: true });
   }
 
   const observer = new Observer(render);
   observer.observe(feed, { childList: true, subtree: true, characterData: true });
-  readButton.addEventListener("click", () => openReader());
-  closeReader.addEventListener("click", () => closePanels());
-  closeComposer.addEventListener("click", () => closePanels());
+  readButton.addEventListener("click", showMore);
   feed.addEventListener("click", (event) => {
     const edit = event.target.closest(".hu-edit");
     if (edit && feed.contains(edit) && !edit.disabled) openComposer();
   }, true);
 
   return Object.freeze({
-    openComposer, openReader, closePanels, render,
+    openComposer, closeComposer, openReader, render,
     setState(status, ctx) {
       enabled = status !== "idle";
       canPost = ["member", "admin", "owner"].includes(ctx?.member?.role);
-      if (!enabled) {
-        closePanels({ restore: false });
-        returnTo = null;
-      } else if (!canPost && !composer.hidden) closePanels({ restore: false });
-      render(); // synchronous clearing on identity teardown, before observer delivery
+      if (!enabled) expanded = false;
+      if (!enabled || !canPost) closeComposer({ restore: false });
+      render(); // reset presentation synchronously on identity teardown
     },
   });
 }

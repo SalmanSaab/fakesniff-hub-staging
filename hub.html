@@ -13,24 +13,24 @@
   <title>FAKESNIFF — company hub</title>
   <!-- Claude — 2026-08-12: shared design tokens. Must load before every other
        stylesheet so the shell and the modules resolve the same palette. -->
-  <link rel="stylesheet" href="hub-tokens.css?v=1789345030">
-  <link rel="stylesheet" href="hub.css?v=1789345030">
-  <link rel="stylesheet" href="hub-start.css?v=1789345030">
-  <script src="hub-config.js?v=1789345030" defer></script>
-  <script type="module" src="hub.js?v=1789345030"></script>
+  <link rel="stylesheet" href="hub-tokens.css?v=1789350484">
+  <link rel="stylesheet" href="hub.css?v=1789350484">
+  <link rel="stylesheet" href="hub-start.css?v=1789350484">
+  <script src="hub-config.js?v=1789350484" defer></script>
+  <script type="module" src="hub.js?v=1789350484"></script>
   <!-- Claude — 2026-08-12: Idea Lab module. Loads after hub.js so window.Hub
        exists to register against. Its stylesheet is same-origin, so the CSP
        (style-src 'self') stays intact. -->
-  <script type="module" src="hub-idea-lab.js?v=1789345030"></script>
+  <script type="module" src="hub-idea-lab.js?v=1789350484"></script>
   <!-- Claude — 2026-08-12: Lookbook (Emiel's visual reference container). -->
-  <script type="module" src="hub-lookbook.js?v=1789345030"></script>
-  <script type="module" src="hub-decisions.js?v=1789345030"></script>
+  <script type="module" src="hub-lookbook.js?v=1789350484"></script>
+  <script type="module" src="hub-decisions.js?v=1789350484"></script>
   <!-- Claude — 2026-08-13: Designs. Not a second Lookbook: this is where a
        graphic gets tried on a garment before anyone cuts fabric. -->
-  <script type="module" src="hub-designs.js?v=1789345030"></script>
+  <script type="module" src="hub-designs.js?v=1789350484"></script>
   <!-- Claude — 2026-08-13: the assistant. Talks only to the Edge Function;
        the Gemini key never reaches this page. -->
-  <script type="module" src="hub-assistant.js?v=1789345030"></script>
+  <script type="module" src="hub-assistant.js?v=1789350484"></script>
 </head>
 <body>
   <!-- Codex — 2026-08-11: publishable Hub shell. Company records render only after authenticated membership is verified. -->
@@ -197,23 +197,19 @@
             <h1 id="home-title" data-t="home.today">Today</h1>
             <div class="home-update-shortcut">
               <button id="home-write-update" class="primary-button" type="button" aria-controls="home-update-composer" aria-expanded="false" hidden data-t="home.write_update">Write update</button>
-              <button id="home-read-updates" class="secondary-button" type="button" aria-controls="home-update-reader" aria-expanded="false" hidden data-t="home.read_updates">Read team updates</button>
+              <button id="home-read-updates" class="secondary-button" type="button" aria-controls="home-update-feed" hidden data-t="home.read_updates">Read team updates</button>
             </div>
           </div>
         </div>
         <!-- Inline, stable roots: collapsing preserves drafts; only identity
              teardown unmounts the original updates module. -->
-        <section id="home-update-composer" class="home-update-inline home-compose-inline" aria-labelledby="home-update-compose-title" hidden>
-          <div class="home-inline-heading">
-            <h2 id="home-update-compose-title" data-t="home.your_update">Your update</h2>
-            <button id="home-close-composer" class="micro-link" type="button" aria-controls="home-update-composer" aria-expanded="false" data-t="home.collapse_editor">Collapse editor</button>
-          </div>
+        <div id="home-update-composer" class="home-compose-inline" hidden>
           <div id="home-update-compose-area">
             <p class="home-updates-help" data-t="home.updates_hint">A few lines are enough. Share what is done, what is still open and what comes next.</p>
             <div id="home-update-compose"></div>
             <p class="home-updates-help" data-t="home.updates_delivery">Your team sees these when they open or refresh Home. No notifications are sent.</p>
           </div>
-        </section>
+        </div>
         <div class="home-dashboard">
           <div class="home-work-column">
           <div class="week-signal home-focus" role="group" aria-label="Your next move" data-t-aria="home.next_move_aria">
@@ -271,16 +267,9 @@
             <p id="home-updates-status" role="status" hidden></p>
             <button id="home-updates-retry" class="secondary-button" type="button" hidden data-t="home.retry">Try again</button>
           </div>
-          <div id="home-update-previews" class="home-update-previews"></div>
-          <button id="home-read-loaded-updates" class="micro-link" type="button" aria-controls="home-update-reader" aria-expanded="false" hidden></button>
-          <section id="home-update-reader" class="home-update-inline" aria-labelledby="home-update-feed-title" hidden>
-            <div class="home-inline-heading">
-              <h3 id="home-update-feed-title" data-t="home.team_updates">From the team</h3>
-              <button id="home-close-reader" class="micro-link" type="button" aria-controls="home-update-reader" aria-expanded="false" data-t="home.collapse_updates">Collapse updates</button>
-            </div>
-            <p class="home-updates-help" data-t="home.loaded_updates_help">Up to 40 recent updates, newest first. Open Home or refresh to check for new ones.</p>
-            <div id="home-update-feed"></div>
-          </section>
+          <div id="home-update-feed"></div>
+          <button id="home-read-loaded-updates" class="micro-link" type="button" aria-controls="home-update-feed" aria-expanded="false" hidden></button>
+          <p class="home-updates-help home-feed-limit" data-t="home.loaded_updates_help">Up to 40 recent updates, newest first. Open Home or refresh to check for new ones.</p>
         </section>
           </div>
         </div>

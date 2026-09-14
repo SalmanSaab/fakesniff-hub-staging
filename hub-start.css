@@ -104,7 +104,6 @@ body:not(.is-staging):has(#home.is-active)::before { background-image: none; }
 #home .home-updates-help { margin-bottom: 18px; font-size: 13px; }
 #home #home-update-compose-area { padding: 0; border: 0; background: transparent; }
 #home #home-update-compose-area h3 { margin-bottom: 8px; }
-#home #home-update-feed-title { margin-bottom: 12px; }
 #home .hu-item { padding: 20px; border: 1px solid #e0e1e5; border-radius: 16px; background: var(--paper); gap: 12px; }
 #home .hu-who { font-size: 15px; }
 #home .hu-day { color: var(--muted); opacity: 1; font-size: 12px; font-weight: 550; letter-spacing: .02em; }
@@ -135,23 +134,15 @@ body:not(.is-staging):has(#home.is-active)::before { background-image: none; }
 #home .home-disclosure .micro-status { display: block; margin-top: 6px; font-size: 14px; }
 #home .home-disclosure .micro-status[hidden] { display: none; }
 #home .home-summary-retry { margin: 4px 0 12px; color: var(--fs-accent); }
-#home .home-update-previews { display: grid; gap: 12px; }
-#home .home-report-preview { display: grid; gap: 8px; width: 100%; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); text-align: left; overflow-wrap: anywhere; cursor: pointer; }
-#home .home-report-preview:hover { border-color: var(--fs-accent-edge); }
-#home .home-report-author { font-size: 16px; }
-#home .home-report-meta { font-size: 13px; color: var(--muted); }
-#home .home-report-excerpt { font-size: 16px; line-height: 1.5; }
-#home .home-report-open { font-size: 14px; font-weight: 600; color: var(--fs-accent); }
-#home .home-report-status { font-size: 16px; line-height: 1.5; }
-#home .home-report-status[role="alert"] { color: var(--fs-danger); }
-#home .home-update-inline { min-width: 0; color: var(--ink); scroll-margin-top: 8px; }
-#home .home-compose-inline { max-width: 660px; margin-bottom: 28px; padding-block: 20px; border-block: 1px solid var(--line); }
-#home .home-inline-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 14px; }
-#home .home-inline-heading :is(h2, h3) { margin: 0; font-size: 18px; }
-#home .home-inline-heading button { min-height: 44px; }
-#home .home-update-inline .home-updates-help { font-size: 14px; line-height: 1.5; }
-#home .home-update-inline .hu-line-text { font-size: 16px; overflow-wrap: anywhere; }
-#home .home-update-inline .hu-item { scroll-margin-top: 8px; }
+/* One continuous list. Hidden loaded rows are revealed below the first two;
+ * there is no replacement reader, extra heading, enclosing panel or exit. */
+#home .home-compose-inline { min-width: 0; max-width: 660px; margin-bottom: 28px; }
+#home .home-compose-inline .home-updates-help { font-size: 14px; line-height: 1.5; }
+#home #home-update-feed .hu-line-text { font-size: 16px; overflow-wrap: anywhere; }
+#home #home-update-feed .hu-item { scroll-margin-top: 8px; }
+#home #home-update-feed > [hidden] { display: none; }
+#home #home-read-loaded-updates { margin-top: 12px; }
+#home .home-feed-limit { margin: 12px 0 0; }
 .workspace:has(#home.is-active) > .site-footer { margin-top: 0; padding-block: 20px; }
 
 /* Keep the warning inside the sticky header so it remains visible while
@@ -169,8 +160,7 @@ body.is-staging .topbar::before {
 /* Measured by hub-shell-layout.js; fallback is for first paint only. */
 html { scroll-padding-top: calc(var(--hub-chrome-height, 140px) + 18px); }
 .app-error { top: var(--hub-chrome-height, 140px); }
-#home-update-compose-area,
-#home-update-feed-title { scroll-margin-top: calc(var(--hub-chrome-height, 140px) + 20px); }
+#home-update-compose-area { scroll-margin-top: calc(var(--hub-chrome-height, 140px) + 20px); }
 
 @media (max-width: 1180px) {
   #home .home-dashboard { gap: 24px; }

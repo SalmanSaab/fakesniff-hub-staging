@@ -14,8 +14,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789345030";
-import nl from "./lang/nl.js?v=1789345030";
+import en from "./lang/en.js?v=1789350484";
+import nl from "./lang/nl.js?v=1789350484";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -173,10 +173,8 @@ let restoreMobileMoreFocus = true;
 /* Codex — 2026-09-05: Updates is a Home component, not a self-registering
    screen. No module import or data request before verified membership. */
 const compactUpdates = createCompactHomeUpdates({
-  feed: get("home-update-feed"), previews: get("home-update-previews"),
-  readButton: get("home-read-loaded-updates"), readShortcut: get("home-read-updates"), reader: get("home-update-reader"),
-  composer: get("home-update-composer"), closeReader: get("home-close-reader"),
-  closeComposer: get("home-close-composer"), writeButton: get("home-write-update"),
+  feed: get("home-update-feed"), readButton: get("home-read-loaded-updates"),
+  composer: get("home-update-composer"), writeButton: get("home-write-update"),
   fallbackButton: get("home-updates-refresh")
 });
 const homeUpdates = createHomeUpdatesLifecycle({
@@ -428,7 +426,7 @@ function activateSection(sectionId, { focus = false } = {}) {
   void mountRegisteredSection(normalized);
   void homeUpdates.sync({ active: normalized === "home", refresh: sectionChanged });
   if (normalized !== "home") {
-    compactUpdates.closePanels({ restore: false });
+    compactUpdates.closeComposer({ restore: false });
     disconnectHomeActivityObserver();
   } else if (
     sectionChanged
@@ -2604,6 +2602,10 @@ function bindEvents() {
   accessSignOutButton.addEventListener("click", signOut);
   refreshButton.addEventListener("click", requestWorkspaceRefresh);
   get("home-write-update").addEventListener("click", () => {
+    if (!get("home-update-composer").hidden) {
+      compactUpdates.closeComposer();
+      return;
+    }
     void homeUpdates.openComposer();
   });
   get("home-read-updates").addEventListener("click", () => {
