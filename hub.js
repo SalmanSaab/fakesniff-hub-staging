@@ -2,12 +2,16 @@
 
 import { createHubAuth, validateHubConfig } from "./hub-auth.js";
 import { createConnectedWorkRepository, HubRepositoryError } from "./hub-work-repository.js";
-import { composeHomeActivity, normalizeHomeChanges } from "./hub-home-activity.js";
+// Revisioned static imports avoid both stale named exports and top-level-await
+// registration races. Bump the shared helper revision when these files change.
+// The i18n singleton intentionally retains its one unversioned URL.
+import { composeHomeActivity, normalizeHomeChanges, homeActivitySection } from "./hub-home-activity.js?v=2026091401";
 import { createHomeUpdatesLifecycle } from "./hub-home-updates.js";
 import { createCompactHomeUpdates } from "./hub-home-compact.js";
 import { observeCollectionMore } from "./hub-collection-more.js";
 import { observeHubChrome } from "./hub-shell-layout.js";
 import { observeIdeaPresentation } from "./hub-idea-presentation.js";
+import { attachRawExplorer } from "./hub-raw-explorer.js?v=2026091401";
 import {
   addTranslations,
   currentLanguage,
@@ -16,8 +20,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789383282";
-import nl from "./lang/nl.js?v=1789383282";
+import en from "./lang/en.js?v=1789389516";
+import nl from "./lang/nl.js?v=1789389516";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -369,7 +373,8 @@ async function mountRegisteredSection(sectionId) {
   registration.mountingKey = contextKey;
 
   try {
-    const mounted = await registration.module.mount(registration.root, buildSectionContext());
+    const context = buildSectionContext();
+    const mounted = await registration.module.mount(registration.root, context);
     const cleanup = cleanupFromMountResult(mounted);
     if (registration.sequence !== mountSequence || !sectionContextIsCurrent(generation, userId)) {
       if (cleanup) {
@@ -382,10 +387,16 @@ async function mountRegisteredSection(sectionId) {
       if (registration.sequence === mountSequence) registration.root.replaceChildren();
       return;
     }
+    // Attach only after the async owner mount passes its identity/sequence gate.
+    // Keep the owner module and its write handlers intact; clear the companion first.
     registration.cleanup = cleanup;
+    const explorer = sectionId === "idea-lab" ? attachRawExplorer(registration.root, context) : null;
+    registration.cleanup = () => { try { explorer?.destroy(); } finally { cleanup?.(); } };
     registration.contextKey = contextKey;
   } catch {
     if (registration.sequence === mountSequence && sectionContextIsCurrent(generation, userId)) {
+      try { registration.cleanup?.(); } catch { /* Error rendering must still clear the root. */ }
+      registration.cleanup = null;
       renderSectionLoadError(registration.root, sectionId);
     }
   } finally {
@@ -886,23 +897,28 @@ function homeActivityKindLabel(kind) {
     task_review: t("home.kind_review"),
     decision_recorded: t("home.kind_decision"),
     decision_agreed: t("home.kind_agreed"),
-    review_stale: t("home.kind_untouched")
+    review_stale: t("home.kind_untouched"),
+    lookbook_added: t("home.kind_lookbook"), idea_saved: t("home.kind_idea"),
+    task_created: t("home.kind_work_added"), task_completed: t("home.kind_completed")
   }[kind] || t("home.kind_update");
 }
 
 function homeActivityActor(item) {
   return !item.actorName || item.actorName === "Someone on the team"
-    ? t("home.someone_team")
+    ? t("home.actor_unknown")
     : item.actorName;
 }
 
 function homeActivityTitle(item) {
+  if (!item.title && item.kind === "lookbook_added") return t("home.untitled_reference");
   return !item.title || item.title === "Untitled work"
     ? t("home.untitled_work")
     : item.title;
 }
 
 function homeActivityDetail(item) {
+  const addedKey = {lookbook_added:"home.change_lookbook",idea_saved:"home.change_idea",task_created:"home.change_work_added",task_completed:"home.change_completed"}[item.kind];
+  if (addedKey) return t(addedKey, {actor:homeActivityActor(item)});
   if (item.kind === "task_waiting") {
     return t("home.change_waiting", { actor: homeActivityActor(item) });
   }
@@ -940,6 +956,10 @@ function makeHomeActivityRow(item) {
     createElement("span", `home-change-kind${attention ? " is-attention" : ""}`, homeActivityKindLabel(item.kind)),
     createElement("span", "home-change-time", item.kind === "review_stale" ? t("home.still_open") : homeActivityTime(item.occurredAt))
   );
+  const destination = homeActivitySection(item.kind);
+  const link = createElement("a", "micro-link", t("home.open_activity_section", {section:sectionLabel(destination)}));
+  link.href = `#${destination}`;
+  meta.append(link);
   row.append(copy, meta);
   return row;
 }
@@ -978,13 +998,12 @@ function renderHomeActivity() {
 
   if (state.homeActivity.status === "loading") status.textContent = t("home.checking");
   else if (state.homeActivity.status === "error") status.textContent = t("home.check_failed_short");
-  else if (digest.firstVisit && newCount) status.textContent = t("home.today");
   else if (newCount) status.textContent = t(pluralKey("home.new", newCount), { n: localNumber(newCount) });
   else if (digest.items.length) status.textContent = t("home.still_open");
   else status.textContent = t("home.up_to_date");
   retry.hidden = state.homeActivity.status !== "error";
 
-  const notes = [];
+  const notes = [t(digest.coverageVersion === 2 ? "home.activity_coverage" : "home.activity_coverage_limited")];
   if (digest.hasMore) notes.push(t("home.more_changes"));
   if (state.homeActivity.acknowledgementWarning) notes.push(t("home.receipt_warning"));
   if (state.homeActivity.status === "error" && hasPayload && payload.items.length) notes.push(t("home.cached_changes"));

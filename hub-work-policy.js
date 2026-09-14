@@ -1,8 +1,8 @@
 /* Codex — 2026-08-12: pure Work rules shared by the browser UI and tests. */
 
 import { addTranslations, t } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789383282";
-import nl from "./lang/nl.js?v=1789383282";
+import en from "./lang/en.js?v=1789389516";
+import nl from "./lang/nl.js?v=1789389516";
 
 /* Codex — 2026-08-30: policy tests import this module without hub.js, so the
    safe, human error boundary registers its own dictionaries as well. */

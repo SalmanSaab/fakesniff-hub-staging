@@ -9,12 +9,19 @@ export const HOME_CHANGE_KINDS = Object.freeze([
   "task_waiting",
   "task_review",
   "decision_recorded",
-  "decision_agreed"
+  "decision_agreed",
+  "lookbook_added",
+  "idea_saved",
+  "task_created",
+  "task_completed"
 ]);
 
 const HOME_CHANGE_KIND_SET = new Set(HOME_CHANGE_KINDS);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_RECEIPT_IDS = 500;
+const FAMILY = Object.freeze({ task_waiting:"task", task_review:"task", task_created:"task", task_completed:"task", decision_recorded:"decision", decision_agreed:"decision", lookbook_added:"lookbook", idea_saved:"idea" });
+const entityKey = item => `${FAMILY[item.kind] || "task"}:${item.entityId}`;
+export function homeActivitySection(kind) { return ({task:"work",decision:"decisions",lookbook:"lookbook",idea:"idea-lab"})[FAMILY[kind]] || "work"; }
 
 function safeText(value, limit) {
   return String(value ?? "").trim().slice(0, limit);
@@ -41,12 +48,12 @@ export function normalizeHomeChanges(payload) {
     if (
       !HOME_CHANGE_KIND_SET.has(kind)
       || !UUID.test(eventId)
-      || !UUID.test(entityId)
-      || !title
+      || !(kind === "idea_saved" ? /^[1-9]\d{0,18}$/.test(entityId) && BigInt(entityId) <= 9223372036854775807n : UUID.test(entityId))
+      || (!title && kind !== "lookbook_added")
       || !occurredAt
     ) continue;
 
-    const key = `${kind.startsWith("task_") ? "task" : "decision"}:${entityId}`;
+    const key = entityKey({kind, entityId});
     if (seen.has(key)) continue;
 
     const receiptIds = [];
@@ -71,7 +78,7 @@ export function normalizeHomeChanges(payload) {
       kind,
       entityId,
       title,
-      actorName: safeText(raw?.actorName, 80) || "Someone on the team",
+      actorName: safeText(raw?.actorName, 80),
       occurredAt,
       needsYou: raw?.needsYou === true,
       receiptEventIds: Object.freeze(receiptIds)
@@ -80,6 +87,7 @@ export function normalizeHomeChanges(payload) {
   }
 
   return Object.freeze({
+    coverageVersion: source.coverageVersion === 2 ? 2 : 1,
     firstVisit: source.firstVisit === true,
     lastOpenedAt: safeDate(source.lastOpenedAt),
     hasMore: source.hasMore === true || receiptsTruncated,
@@ -119,9 +127,9 @@ export function selectStaleReviews(tasks, memberId, now = Date.now(), limit = 2)
 
 export function composeHomeActivity(payload, tasks, memberId, now = Date.now(), limit = 5) {
   const normalized = normalizeHomeChanges(payload);
-  const changedEntities = new Set(normalized.items.map((item) => item.entityId));
+  const changedEntities = new Set(normalized.items.map(entityKey));
   const stale = selectStaleReviews(tasks, memberId, now, 2)
-    .filter((item) => !changedEntities.has(item.entityId));
+    .filter((item) => !changedEntities.has(entityKey(item)));
   const max = Math.max(1, Math.min(Number(limit) || 5, 10));
 
   const items = [...normalized.items, ...stale]
