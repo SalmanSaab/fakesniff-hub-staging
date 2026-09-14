@@ -7,6 +7,7 @@ import { createHomeUpdatesLifecycle } from "./hub-home-updates.js";
 import { createCompactHomeUpdates } from "./hub-home-compact.js";
 import { observeCollectionMore } from "./hub-collection-more.js";
 import { observeHubChrome } from "./hub-shell-layout.js";
+import { observeIdeaPresentation } from "./hub-idea-presentation.js";
 import {
   addTranslations,
   currentLanguage,
@@ -15,8 +16,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789373534";
-import nl from "./lang/nl.js?v=1789373534";
+import en from "./lang/en.js?v=1789383282";
+import nl from "./lang/nl.js?v=1789383282";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -131,6 +132,7 @@ observeHubChrome(get("hub-topbar"), document.documentElement);
 const accessScreen = get("access-screen");
 const appShell = get("app-shell");
 const collectionMore = observeCollectionMore(appShell);
+observeIdeaPresentation(get("idea-lab"));
 const accessLoading = get("access-loading");
 const accessCopy = get("access-copy");
 const accessStatus = get("access-status");
