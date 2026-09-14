@@ -5,45 +5,27 @@
  * changed here. Navigation never folds a list someone has already expanded.
  */
 import { t } from "./hub-i18n.js";
+import { createListMore } from "./hub-list-more.js";
 
 export function createCompactHomeUpdates({ feed, readButton, composer, writeButton, fallbackButton, Observer = globalThis.MutationObserver }) {
   let enabled = false;
   let canPost = false;
-  let expanded = false;
+  const more = createListMore({ list: feed, button: readButton,
+    rows: () => [...feed.querySelectorAll(".hu-item")], initial: 2,
+    enabled: () => enabled,
+    label: n => t("home.show_more_updates", { n }),
+    afterRender() {
+      let day = null;
+      for (const child of feed.children) {
+        if (child.classList.contains("hu-day")) { day = child; day.hidden = true; }
+        if (child.classList.contains("hu-item") && !child.hidden && day) day.hidden = false;
+      }
+    }
+  });
 
   function render() {
-    const rows = [...feed.querySelectorAll(".hu-item")];
-    let count = 0;
-    let day = null;
-    for (const child of feed.children) {
-      if (child.classList.contains("hu-day")) {
-        day = child;
-        day.hidden = true;
-      }
-      if (!child.classList.contains("hu-item")) continue;
-      child.hidden = !enabled || (!expanded && count >= 2);
-      count += 1;
-      if (!child.hidden && day) day.hidden = false;
-    }
-    const remaining = Math.max(0, rows.length - 2);
-    readButton.hidden = !enabled || expanded || !remaining;
-    readButton.textContent = t("home.show_more_updates", { n: remaining });
-    readButton.setAttribute("aria-expanded", String(expanded));
+    more.render();
     writeButton.setAttribute("aria-expanded", String(!composer.hidden));
-  }
-
-  function showMore() {
-    if (!enabled) return;
-    const next = [...feed.querySelectorAll(".hu-item")].find(row => row.hidden);
-    expanded = true;
-    // Transfer focus before removing the button. No scrollIntoView: the first
-    // two reports stay exactly where the person was reading them.
-    if (next) {
-      next.hidden = false;
-      next.setAttribute("tabindex", "-1");
-      next.focus({ preventScroll: true });
-    }
-    render();
   }
 
   function openReader() {
@@ -73,7 +55,6 @@ export function createCompactHomeUpdates({ feed, readButton, composer, writeButt
 
   const observer = new Observer(render);
   observer.observe(feed, { childList: true, subtree: true, characterData: true });
-  readButton.addEventListener("click", showMore);
   feed.addEventListener("click", (event) => {
     const edit = event.target.closest(".hu-edit");
     if (edit && feed.contains(edit) && !edit.disabled) openComposer();
@@ -84,7 +65,7 @@ export function createCompactHomeUpdates({ feed, readButton, composer, writeButt
     setState(status, ctx) {
       enabled = status !== "idle";
       canPost = ["member", "admin", "owner"].includes(ctx?.member?.role);
-      if (!enabled) expanded = false;
+      if (!enabled) more.reset();
       if (!enabled || !canPost) closeComposer({ restore: false });
       render(); // reset presentation synchronously on identity teardown
     },

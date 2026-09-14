@@ -5,6 +5,7 @@ import { createConnectedWorkRepository, HubRepositoryError } from "./hub-work-re
 import { composeHomeActivity, normalizeHomeChanges } from "./hub-home-activity.js";
 import { createHomeUpdatesLifecycle } from "./hub-home-updates.js";
 import { createCompactHomeUpdates } from "./hub-home-compact.js";
+import { observeCollectionMore } from "./hub-collection-more.js";
 import { observeHubChrome } from "./hub-shell-layout.js";
 import {
   addTranslations,
@@ -14,8 +15,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789350484";
-import nl from "./lang/nl.js?v=1789350484";
+import en from "./lang/en.js?v=1789373534";
+import nl from "./lang/nl.js?v=1789373534";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,
@@ -129,6 +130,7 @@ const get = (id) => document.getElementById(id);
 observeHubChrome(get("hub-topbar"), document.documentElement);
 const accessScreen = get("access-screen");
 const appShell = get("app-shell");
+const collectionMore = observeCollectionMore(appShell);
 const accessLoading = get("access-loading");
 const accessCopy = get("access-copy");
 const accessStatus = get("access-status");
@@ -546,6 +548,7 @@ function showAccessDenied() {
 }
 
 function clearWorkspaceState() {
+  collectionMore.reset();
   homeUpdates.destroy();
   state.refreshSequence += 1;
   state.mutationSequence += 1;
@@ -1250,7 +1253,7 @@ function renderSummary() {
   });
   renderHomeList(
     get("home-attention-list"),
-    attention.slice(0, 5),
+    attention,
     (task) => task.status === "waiting"
       ? task.blocker_note
       : t("work.review_by", { name: memberName(task.approver_id, t("work.approver_needed")) }),

@@ -141,6 +141,11 @@ body:not(.is-staging):has(#home.is-active)::before { background-image: none; }
 #home #home-update-feed .hu-line-text { font-size: 16px; overflow-wrap: anywhere; }
 #home #home-update-feed .hu-item { scroll-margin-top: 8px; }
 #home #home-update-feed > [hidden] { display: none; }
+.collection-more { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0 24px; }
+.collection-more-count { color: var(--muted); font-size: 13px; }
+.collection-more button { min-height: 44px; margin-inline-start: auto; }
+.collection-more-note { flex-basis: 100%; color: var(--muted); line-height: 1.5; }
+.collection-more:has(> span[hidden]):has(> button[hidden]):has(> small[hidden]) { display: none; }
 #home #home-read-loaded-updates { margin-top: 12px; }
 #home .home-feed-limit { margin: 12px 0 0; }
 .workspace:has(#home.is-active) > .site-footer { margin-top: 0; padding-block: 20px; }
