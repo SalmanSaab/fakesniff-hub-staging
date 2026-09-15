@@ -11,7 +11,7 @@ import { createCompactHomeUpdates } from "./hub-home-compact.js";
 import { observeCollectionMore } from "./hub-collection-more.js";
 import { observeHubChrome } from "./hub-shell-layout.js";
 import { observeIdeaPresentation } from "./hub-idea-presentation.js";
-import { attachRawExplorer } from "./hub-raw-explorer.js?v=2026091401";
+import { attachRawExplorer } from "./hub-raw-explorer.js?v=2026091501";
 import {
   addTranslations,
   currentLanguage,
@@ -20,8 +20,8 @@ import {
   setLanguage,
   t
 } from "./hub-i18n.js";
-import en from "./lang/en.js?v=1789389516";
-import nl from "./lang/nl.js?v=1789389516";
+import en from "./lang/en.js?v=1789473834";
+import nl from "./lang/nl.js?v=1789473834";
 import {
   ACTIVE_WORK_STATUSES as ACTIVE_STATUSES,
   WORK_STATUSES as STATUSES,

@@ -42,6 +42,7 @@ export function attachRawExplorer(root, ctx) {
   let disposed = false, active = false, initialized = false, busy = false, sequence = 0;
   let rows = [], recent = [], total = 0, selected = null, focusId = null, facets = null;
   let searching = false, offset = 0, ceiling = null, mode = "globe", pending = 0, failed = false, facetFailed = false, listLimit = 60;
+  let committedQuery = { q: "", category: "", source: "" };
   let newIds = new Set(), returnScroll = null;
   let camera = { yaw: .35, pitch: -.15, k: 1 }, recentCamera = null;
   let frame = null, lastFrame = 0, pollBusy = false, spin = !motion.matches, drag = null, moved = false;
@@ -78,16 +79,19 @@ export function attachRawExplorer(root, ctx) {
       select.value = previous;
     }
   }
+  const queryValues = () => ({ q: fields.q.value.trim(), category: fields.category.value, source: fields.source.value });
+  const queryChanged = () => Object.entries(queryValues()).some(([key, value]) => value !== committedQuery[key]);
   function status() {
     $(".raw-scope").textContent = busy ? copy("Checking material…", "Materialen controleren…") : failed ? copy("Could not refresh. Any shown material is the last loaded collection.", "Vernieuwen is niet gelukt. Getoonde materialen zijn de laatst geladen verzameling.") :
       searching ? `${total} ${copy("archive matches", "resultaten in het archief")} · ${rows.length ? offset + 1 : 0}–${offset + rows.length}` : `${rows.length} ${copy("newest materials · not the whole archive", "nieuwste materialen · niet het hele archief")}`;
+    if (!busy && !failed && queryChanged()) $(".raw-scope").textContent += copy(" · Press Search to apply changes.", " · Druk op Zoeken om wijzigingen toe te passen.");
     host.setAttribute("aria-busy", String(busy));
     const error = $(".raw-error"); error.hidden = !facetFailed;
     error.textContent = copy("Archive filters could not load. Text search is available; Refresh retries the filters.", "Archieffilters konden niet laden. Vrij zoeken blijft beschikbaar; Vernieuwen probeert opnieuw.");
     $("[data-action=refresh]").textContent = pending ? `${pending} ${copy("new · load", "nieuw · laden")}` : copy("Refresh", "Vernieuwen");
     $("[data-action=refresh]").disabled = busy;
-    $("[data-action=previous]").disabled = busy || offset === 0;
-    $("[data-action=next]").disabled = busy || offset + rows.length >= total;
+    $("[data-action=previous]").disabled = busy || queryChanged() || offset === 0;
+    $("[data-action=next]").disabled = busy || queryChanged() || offset + rows.length >= total;
     $(".raw-pages").hidden = !searching;
     $(".raw-pages span").textContent = `${rows.length ? offset + 1 : 0}–${offset + rows.length} / ${total}`;
   }
@@ -135,7 +139,7 @@ export function attachRawExplorer(root, ctx) {
     const id = selected?.id; selected = null; preview();
     let target = mode === "list" ? [...$(".raw-list").children].find(e=>e.dataset.rawId === String(id)) : nodes.find(n=>n.point.item.id===id)?.g;
     if (target?.getAttribute("aria-hidden") === "true") target = null;
-    (target || $(".raw-field")).focus({preventScroll:true});
+    (target || $(mode === "list" ? "[data-action=list]" : ".raw-field")).focus({preventScroll:true});
     if (returnScroll) window.scrollTo({...returnScroll,behavior:"instant"}); returnScroll=null;
   }
   function draw() {
@@ -163,22 +167,23 @@ export function attachRawExplorer(root, ctx) {
   function zoom(factor) { spin = false; camera.k = zoomScale(camera.k,factor); draw(); syncMotion(); }
   async function load(reset = true, requestedOffset = offset) {
     const mine = ++sequence; busy = true; failed = false; status(); syncMotion();
-    const search = !!(fields.q.value.trim() || fields.category.value || fields.source.value);
+    const query = reset ? queryValues() : {...committedQuery};
+    const search = !!(query.q || query.category || query.source);
     const nextOffset = reset ? 0 : requestedOffset;
     let nextCeiling = reset ? null : ceiling;
     try {
       if (search && nextCeiling === null) { const boundary = await repo.read({mode:"boundary"}); if (disposed || mine !== sequence) return; nextCeiling = boundary.rows[0]?.id || 0; }
-      const result = await repo.read({mode: search ? "search":"recent",q:fields.q.value,category:fields.category.value,source:fields.source.value,offset:nextOffset,ceiling:search?nextCeiling:null});
+      const result = await repo.read({mode: search ? "search":"recent",...query,offset:nextOffset,ceiling:search?nextCeiling:null});
       if (disposed || mine !== sequence) return;
       if (search && !searching) recentCamera = {...camera};
       if (!search) { const known = new Set(recent.map(r=>r.id)); newIds = new Set(recent.length ? result.rows.filter(r=>!known.has(r.id)).map(r=>r.id) : []); recent = result.rows; pending = 0; if (searching && recentCamera) camera = recentCamera; }
       else newIds = new Set();
-      rows = result.rows; total = result.total; searching = search; offset = nextOffset; ceiling = nextCeiling; listLimit=60; selected = null; returnScroll=null; focusId = null; preview();
+      rows = result.rows; total = result.total; searching = search; offset = nextOffset; ceiling = nextCeiling; committedQuery = query; listLimit=60; selected = null; returnScroll=null; focusId = null; preview();
     } catch { if (!disposed && mine === sequence) failed = true; }
     finally { if (!disposed && mine === sequence) { busy = false; render(); } }
   }
   async function loadFacets() { try { const result = await repo.facets(); if (disposed) return; facets = result; facetFailed = false; renderFilters(); } catch { if (!disposed) facetFailed = true; } if (!disposed) status(); }
-  async function poll() { if (!active || pollBusy || busy || disposed || searching) return; pollBusy = true; try { const result = await repo.read(); if (!disposed) { const known = new Set(recent.map(r=>r.id)); pending = result.rows.filter(r=>!known.has(r.id)).length; status(); } } catch { /* Explicit refresh reports failures; a failed arrival probe does not replace data. */ } finally { pollBusy = false; } }
+  async function poll() { if (!active || pollBusy || busy || disposed || searching) return; const mine = sequence; pollBusy = true; try { const result = await repo.read(); if (!disposed && active && !searching && mine === sequence) { const known = new Set(recent.map(r=>r.id)); pending = result.rows.filter(r=>!known.has(r.id)).length; status(); } } catch { /* Explicit refresh reports failures; a failed arrival probe does not replace data. */ } finally { pollBusy = false; } }
   function syncActive() {
     if (disposed) return;
     active = rawExplorerActive({sectionActive:root.classList.contains("is-active"),rawVisible:!tab.hidden,documentVisible:!document.hidden,editorOpen:!!root.querySelector("#ilab-detail.open")});
@@ -187,6 +192,7 @@ export function attachRawExplorer(root, ctx) {
     draw(); syncMotion();
   }
   $("form").addEventListener("submit", e=>{e.preventDefault(); void load();});
+  fields.q.addEventListener("input", status);
   for (const key of ["category","source"]) fields[key].addEventListener("change",()=>void load());
   host.addEventListener("click", e=>{
     const action = e.target.closest("[data-action]")?.dataset.action; if (!action) return;
@@ -198,7 +204,7 @@ export function attachRawExplorer(root, ctx) {
     else if (action === "in" || action === "out") zoom(action === "in" ? 1.2 : 1/1.2);
     else if (action === "fit") { camera={...camera,k:1}; draw(); }
     else if (action === "spin") { spin=!spin; syncMotion(); }
-    else if (!busy && (action === "previous" || action === "next")) { void load(false,Math.max(0,offset+(action === "next"?60:-60))); }
+    else if (!busy && !queryChanged() && (action === "previous" || action === "next")) { void load(false,Math.max(0,offset+(action === "next"?60:-60))); }
   });
   const field = $(".raw-field");
   field.addEventListener("keydown",e=>{if (!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","-","="].includes(e.key)) return; e.preventDefault(); spin=false; if (["+","-","="].includes(e.key)) zoom(e.key==="-"?1/1.2:1.2); else { camera.yaw+=(e.key==="ArrowLeft"?-.14:e.key==="ArrowRight"?.14:0); camera.pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,camera.pitch+(e.key==="ArrowUp"?.14:e.key==="ArrowDown"?-.14:0))); draw(); syncMotion(); }});
